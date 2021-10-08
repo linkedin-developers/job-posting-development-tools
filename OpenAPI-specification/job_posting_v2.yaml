@@ -1,0 +1,965 @@
+openapi: 3.0.0
+info:
+  description: >
+    LinkedIn's Job Posting API enables authorized third parties such as clients, ATS systems, and Job Distributors to post jobs directly to LinkedIn on behalf of customers. This guide details on how to integrate with LinkedIn's Jobs Posting API.
+
+  version: '2.0'
+  title: LinkedIn Job Posting API
+  
+externalDocs:
+  url: https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/overview
+  description: LinkedIn Job Posting API Documentation
+servers:
+  - url: 'https://api.linkedin.com/v2'
+    description: LinkedIn API endpoint
+
+paths:
+  /simpleJobPostings:
+    post:
+      description: API to create, update, close or renew job postings on LinkedIn
+      operationId: createSimpleJobPosting
+      security:
+        - LinkedInOauth: []
+      parameters: 
+        - in: header
+          name: x-restli-method
+
+          schema:
+            type: string
+            enum: 
+              - batch_create
+          required: true
+          description: Header to be provided to represent batch request. Value must be <b>batch_create</b>
+          
+        
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                elements:
+                  type: array
+                  items:
+                    oneOf:
+                      - $ref: '#/components/schemas/JobPostingFoundationSchema'
+                    anyOf:
+                      - $ref: '#/components/schemas/PromotedJobsExtensionSchema'
+                      - $ref: '#/components/schemas/RecruiterSystemConnectExtensionSchema'
+          
+            examples:
+              createBasicJobWithFoundationSchemaExample:
+                $ref: '#/components/examples/createBasicJobWithFoundationSchemaExample'
+              createBasicRemoteJobWithFoundationSchemaExample:
+                $ref: '#/components/examples/createBasicRemoteJobWithFoundationSchemaExample'
+              createPromotedJobWithPromotedExtensionSchemaExample:
+                $ref: '#/components/examples/createPromotedJobWithPromotedExtensionSchemaExample'
+              createPublicJobWithRSCSchemaExample:
+                $ref: '#/components/examples/createPublicJobWithRSCSchemaExample'
+              createPrivateJobWithRSCSchemaExample:
+                $ref: '#/components/examples/createPrivateJobWithRSCSchemaExample'
+              updateJobPostingExample:
+                $ref: '#/components/examples/updateJobPostingExample'
+              renewJobPostingExample:
+                $ref: '#/components/examples/renewJobPostingExample'
+              closeJobPostingExample:
+                $ref: '#/components/examples/closeJobPostingExample'
+              createMultipleJobsExample:
+                $ref: '#/components/examples/createMultipleJobsExample'
+              
+
+      responses:
+        '200':
+          description: >
+            OK <br>
+            A successful request returns a 200 OK response code, and you will find the simpleJobPostingTaskIDs in the response body. <br>
+            In case of an error, the request can also return a 200 OK response code and the error message is within the response body.<br>
+            For more information in error codes and their resolutions refer the following error code references based on jobPostingOperationType
+              * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes">Error Codes while jobPostingOperationType = CREATE (creating new job postings)</a>
+               * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/update-renew-jobs#error-codes">Error Codes while jobPostingOperationType = UPDATE or RENEW</a>
+               * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/close-jobs#error-codes">Error Codes while jobPostingOperationType = CLOSE</a>
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleJobPostingResponseSchema'
+              
+              examples:
+                simpleJobPostingSuccessResponseExample:
+                  $ref: '#/components/examples/simpleJobPostingSuccessResponseExample'
+                simpleJobPostingErrorResponseExample:
+                  $ref: '#/components/examples/simpleJobPostingErrorResponseExample'
+
+        '401':
+          description: >
+            Unauthorized<br>
+            The access token that is being used is invalid or it has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serviceErrorCode:
+                    type: integer
+                    example: 123
+                  message:
+                    type: string
+                    example: Invalid Access Token
+                  status:
+                    type: integer
+                    example: 401
+              examples:
+                Invalid Access Token:
+                  value:
+                    serviceErrorCode: 65600
+                    message: Invalid access token
+                    status: 401
+                Expired Access Token:
+                  value:
+                    serviceErrorCode: 65602
+                    message: The token used in the request has expired
+                    status: 401
+
+        '403':
+          description: >
+            Forbidden<br>
+            The application is not authorized to make the calle. This can be due to the application used for posting premium job does not belong to the Job posting contract. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serviceErrorCode:
+                    type: integer
+                    example: 123
+                  message:
+                    type: string
+                    example: Invalid Access Token
+                  status:
+                    type: integer
+                    example: 401
+              examples:
+                Not Authorized:
+                  value:
+                    serviceErrorCode: 65600
+                    message: >
+                      Caller is not authorized to access the jobs for contract: urn:li:contract:<contractID>
+                    status: 403
+
+        '404':
+          description: >
+            Not Found<br>
+            The rource the application is trying to access does not exist.
+          content:
+            application/json:
+              examples:
+                Not Found:
+                  value:
+                    serviceErrorCode: 0
+                    message: >
+                      Resource simpleJobPostingss does not exist
+                    status: 404        
+
+
+  /simpleJobPostingTasks:
+    get:
+      description: "After creating job postings, you can use the task ids from the response to track the status of the creation of the job postings.The task IDs returned will have a lifespan of 24 hours. Possible status values returned are: IN_PROGRESS, SUCCEEDED, FAILED."
+      operationId: getSimpleJobPostingTaskStatus
+      security: 
+        - LinkedInOauth: []
+      parameters:
+        - in: query
+          name: ids
+          description: "Simple Job Posting Task Ids"
+          required: true
+          explode: true
+          schema:
+            type: array
+            items:
+              type: string
+              example: urn:li:simpleJobPostingTask:<taskID>
+      responses:
+        '200':
+          description: >
+            OK <br>
+            Returns the status of the Job Posting Task Ids mentioned in the request<br>
+            In case of an error, the API will still return a 200 OK response code and the error message is within the response body.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SimpleJobPostingAPIResult'
+
+              examples:
+                simpleJobPostingTaskSuccessResultExample:
+                  $ref: '#/components/examples/simpleJobPostingTaskSuccessResultExample'
+                simpleJobPostingTaskErrorResultExample:
+                  $ref: '#/components/examples/simpleJobPostingTaskErrorResultExample'
+        '400':
+          description: >
+            Bad Request<br>
+            The request parameter IDs does not contain valid job posting task urn. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/sync-job-postings'>Linkedin Documentation</a>.
+          content:
+            application/json:
+              examples:
+                Bad Request:
+                  value:
+                    message: Batch key parameter value is invalid
+                    status: 400
+        '401':
+          description: >
+            Unauthorized<br>
+            The access token that is being used is invalid or it has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/sync-job-postings'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  serviceErrorCode:
+                    type: integer
+                    example: 123
+                  message:
+                    type: string
+                    example: Invalid Access Token
+                  status:
+                    type: integer
+                    example: 401
+              examples:
+                Invalid Access Token:
+                  value:
+                    serviceErrorCode: 65600
+                    message: Invalid access token
+                    status: 401          
+                Expired Access Token:
+                  value:
+                    serviceErrorCode: 65602
+                    message: The token used in the request has expired
+                    status: 401
+                  
+        '404':
+          description: >
+            Not Found<br>
+            The rource the application is trying to access does not exist. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/sync-job-postings'>Linkedin Documentation</a>.
+          content:
+            application/json:
+              examples:
+                Not Found:
+                  value:
+                    serviceErrorCode: 0
+                    message: >
+                      Resource simpleJobPostingTaskss does not exist
+                    status: 404        
+
+components:
+  securitySchemes:
+    LinkedInOauth:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: https://www.linkedin.com/oauth/v2/accessToken
+          scopes: {}
+
+  schemas:
+
+    JobPostingFoundationSchema:
+      title: Job Posting Foundation Schema
+      type: object
+      externalDocs:
+        description: LinkedIn Job Posting Foundation Schema
+        url: "httpshttps://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/job-posting-api-schema#foundation-schema"
+      properties:
+        integrationContext:
+          type: string
+          description: Represents the company page on LinkedIn this job posting is created for. Must be in the format urn:li:organization:{company_id}
+          example: urn:li:organization:1234
+          
+        companyName:
+          type: string
+          description: >
+            The company name for which this job posting is created for. This field should be used in lieu of integrationContext only if the customer does not have contract with LinkedIn and cannot access the <a href="https://docs.microsoft.com/en-us/linkedin/talent/apply-connect/customer-configuration">Customer Onboarding Widget</a>.
+          example: LinkedIn
+        
+        companyApplyUrl:
+          type: string
+          description: Url for applicants to apply for the job
+          example: https://careers.yourcompany.com/jobID
+        
+        externalJobPostingId:
+          type: string
+          description: Represents unique job id within the partner system. Must be unique.
+          maxLength: 200
+          example: jobID_001
+
+        jobPostingOperationType:
+          type: string
+          enum:
+            - CREATE
+            - UPDATE
+            - RENEW
+            - CLOSE
+          description: >
+            Represents the operation on the job posting:      
+              * CREATE : The request is for creating a new job
+              * UPDATE : The request is for updating an existing job
+              * RENEW : The request is to extend the expiry date of the listed job by 30 days
+              * CLOSE : The request is for closing a listed job
+          example: CREATE
+
+        title:
+          type: string
+          maxLength: 200
+          description: Represents the title of the job posting that will be published
+          example: Software Developer 
+        
+        description:
+          type: string
+          minLength: 100
+          maxLength: 25000
+          description: >
+            Represents the job description including the job basic information, responsibility and so on. <br>
+            A limited set of HTML tags are accepted for formatting the text as as described <a href = "https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/job-posting-api-schema#html-tags" >here</a>.
+
+        listedAt:
+          type: integer
+          format: int64
+          description: Represents initial date the job posting was added into the application tracking system. The date is epoch timestamp in milliseconds (UTC) and should not be a future time
+          example: 1632446968000
+
+        location:
+          type: string
+          description: >
+            Represents the geographic location of the job position to hire. Must be in the format "CITY, STATE", "CITY, PROVINCE", "CITY, COUNTRY" or "POSTALCODE, COUNTRYCODE".<br>
+            Valid country codes are described <a href="https://docs.microsoft.com/en-us/linkedin/shared/references/reference-tables/country-codes">here</a>. Refer to the <a href="https://www.linkedin.com/help/recruiter/answer/a478845?trk=hc-articlePage-sidebar">Help Article</a> for few guidelines to ensure improved accuracy for location matching
+          example: us
+
+        categories:
+          type: array
+          items:
+            type: string
+          example: [acct, sale]
+          description: >
+            Represents job functions specific to this job (for example, Accounting, Marketing, Sales). Category names are predefined by LinkedIn and can be retrieved from <a href="https://docs.microsoft.com/en-us/linkedin/shared/references/reference-tables/job-function-codes">Job Functions reference</a> table.
+        
+        skillsDescription:
+          type: string
+          description: >
+            Represents description of desired skills and experiences of the job position. Limited set of HTML tags accepted as described <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/job-posting-api-schema#html-tags">here</a>.
+        
+        companyJobCode:
+          type: string
+          description: Represents job posting id within the company’s system for reference.
+          example: "jobID_001"
+
+        workRemoteAllowed:
+          type: boolean
+          description: >
+            Represents whether this job posting supports remote work option. The default value for this field is false. If this value is true, the value for the <b>location</b> field should be provided as the company headquarters location.
+          example: true
+          default: false
+
+        industries:
+          type: array
+          items: 
+            type: string
+          description: >
+            Represents industries of this job or company. Array element must be quoted and in URN format: <b>"urn:li:industry:{industry_id}"</b>. Industry IDs are predefined by LinkedIn and can be retrieved from <a href="https://docs.microsoft.com/en-us/linkedin/shared/references/reference-tables/industry-codes">Industry Codes</a> reference table
+          example: ['urn:li:industry:47', 'urn:li:industry:128']
+
+        employmentStatus:
+          type: string
+          enum:
+            - FULL_TIME
+            - PART_TIME
+            - CONTRACT
+            - INTERNSHIP
+            - TEMPORARY
+            - VOLUNTEER
+            - OTHER
+          default: FULL_TIME
+          description: Represents employment status of the job position
+          example: PART_TIME
+
+        experienceLevel:
+          type: string
+          enum: 
+            - ENTRY_LEVEL
+            - MID_SENIOR_LEVEL
+            - DIRECTOR
+            - EXECUTIVE
+            - INTERNSHIP
+            - ASSOCIATE
+            - NOT_APPLICABLE
+
+          description: Represents experience level of the job position to hire
+          example: ENTRY_LEVEL
+
+        companyDescription:
+          type: string
+          description: Represents short description of the company who is publishing this job
+
+        trackingPixelUrl:
+          type: string
+          format: uri
+          description: URL for the tracking pixel to be embedded on the job description. To learn more on how to use Tracking Pixel refer to the <a href="https://www.linkedin.com/help/linkedin/answer/a412139">Help Article</a>.
+          example: http://www.trackingpixellocation.com/
+
+        expireAt:
+          type: integer
+          format: int64
+          description: The job will expire (and no longer be shown to users) at this date. Can be a maximum of three years from time job is sent to LinkedIn. If no expiration date is passed in, the job will default to 180 days expiration. Value greater than 180 days is not allowed. The expireAt date is represented as epoch timestamp in milliseconds (UTC).
+          example: 1632446968000
+
+        listingType:
+              type: string
+              enum:
+                - PREMIUM
+                - BASIC
+              description: >
+                Represents the type of this job posting to be published. Value of <b>PREMIUM<b> should be provided only if integration is build for Promoted Job Posting Extension Schema. If no value is provided, default value is <b>BASIC</b>.
+              example: PREMIUM
+              default: BASIC
+
+
+      required:
+        - companyApplyUrl
+        - externalJobPostingId
+        - jobPostingOperationType
+        - description
+        - title
+        - listedAt
+        - location
+
+
+    PromotedJobsExtensionSchema:
+      title: Promoted Jobs Extension Schema
+      properties:
+        contract:
+          type: string
+          description: >
+            Represents the contract this job posting is published to, which is signed by the customer with LinkedIn to use LinkedIn Recruiter services. Must be in the format <b>urn:li:contract:{contractId}</b>
+          example: urn:li:contract:12300
+
+        posterEmail:
+          type: string
+          format: email
+          description: Represents valid email address of the poster who will publish the job. Must be the primary email address of the seat holder as defined in the customer's contract. If not provided, the defaultJobPoster configured by the customer is used
+          example: recruiter@company.com
+
+        showPosterInfo:
+          type: boolean
+          description: Represents whether LinkedIn would display the poster information on job description page. The default value is false (No). For Basic jobs this only works if posterEmail is provided and can be associated to a contract seat holder
+          example: true
+      
+      required:
+        - contract
+
+    RecruiterSystemConnectExtensionSchema:
+      title: Job Posting with Recruiter System Connect Extension Schema
+      allOf:
+        - $ref: '#/components/schemas/JobPostingFoundationSchema'
+        - type: object
+          properties:
+
+            availability:
+              type: string
+              enum:
+                - PUBLIC
+                - PRIVATE_TO_ATS_INTEGRATION
+              description: >
+                <b>PUBLIC</b> indicates that the job posting will be visible to LinkedIn members and posted on company page on LinkedIn website. <br> 
+                <b>PRIVATE_TO_ATS_INTEGRATION</b> indicates the job will be visible on within Recruiter Dashboard during 1-Click Export. Must be <b>PUBLIC</b> for Apply Connect enabled jobs.
+              example: PUBLIC
+
+            requisitionOwnerEmail:
+              type: string
+              format: email
+              description: Email of the requisition owner
+              example: recruiter@company.com
+
+            requisitionOwnerLastName:
+              type: string
+              description: Last name of the requisition owner
+              example: Doe
+
+            requisitionOwnerFirstName:
+              type: string
+              description: First name of the requisition owner
+              example: John
+
+          required:
+            - availability
+
+    SimpleJobPostingAPIResult:
+      title: /simpleJobPostingTask API Response Schema
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Unique ID for a simple job posting task
+                example: urn:li:simpleJobPostingTask:123-abc-123-abc-123
+      
+              status:
+                type: string
+                enum:
+                  - SUCCEEDED
+                  - IN_PROGRESS
+                  - FAILED
+                description: Status of the job posting task
+                example: SUCCEEDED
+      
+              jobPosting:
+                type: string
+                description: JobPosting urn resulting from a successful job posting task
+                example: urn:li:jobPosting:123
+      
+              errorMessage:
+                type: string
+                description: Description of an error resulting from a failed job posting task. This is populated only if the status is FAILED.
+
+            required:
+              - id
+              - status
+        statuses:
+          type: object
+        errors:
+          type: object
+
+        
+    SimpleJobPostingResponseSchema:
+      title: /simpleJobPosting API response Schema
+      type: object
+      properties:
+        elements:
+          type: array
+          items:
+            type: object
+            properties:
+                  location:
+                    type: string
+                    example: /simpleJobPostings/urn%3Ali%3AsimpleJobPostingTask%3A<taskID>
+                    description: >
+                      Location of the job posting task if job posting creation was successful.
+                      
+                  status:
+                    type: string
+                    example: 202
+                    description: status code of the job posting task.
+                  
+                  id:
+                    type: string
+                    example: urn:li:simpleJobPostingTask:<taskID>
+                    description: unique ID for the job posting task if the task is successfully created.
+                    
+                  error:
+                    type: object
+                    description: >
+                      Populated only if it fails to create the job posting task. This field contains details regarding the failure.
+                    properties:
+                      message:
+                        type: string
+                        example: >
+                          ERROR :: /title :: field is required but not found and has no default value\n
+                        description: Error message detailing the reason for failure
+                        
+                      status:
+                        type: string
+                        example: 422
+                        description: >
+                          Status code associated with the failures.<br>
+                          For more information regarding error codes and their resoluction refer <a ref="">here</a>
+
+  examples:
+
+    createBasicJobWithFoundationSchemaExample:
+      summary: Create a basic job with foundation Schema
+      value:
+        elements:
+          - integrationContext: urn:li:organization:123
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id_01
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            categories:
+              - rsch
+            industries:
+              - urn:li:industry:55
+            skillsDescription: Lorem Ipsum is simply dummy text
+            companyJobCode: company_external_job_posting_id_01
+            workRemoteAllowed: false
+            employmentStatus: FULL_TIME
+            experienceLevel: EXECUTIVE
+            trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
+            listingType: BASIC
+    
+    createBasicRemoteJobWithFoundationSchemaExample:
+      summary: Create a remote job with foundation schema
+      value:
+        elements:
+          - integrationContext: urn:li:organization:123
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id_01
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: India
+            categories:
+              - rsch
+            industries:
+              - urn:li:industry:55
+            skillsDescription: Lorem Ipsum is simply dummy text
+            companyJobCode: company_external_job_posting_id_01
+            workRemoteAllowed: true
+            employmentStatus: FULL_TIME
+            experienceLevel: EXECUTIVE
+            trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
+            listingType: BASIC
+
+    createPromotedJobWithPromotedExtensionSchemaExample:
+      summary: Create a promoted job with promoted extension schema
+      value:
+        elements:
+        - integrationContext: urn:li:organization:123
+          companyApplyUrl: https://careers.yourcompany.com
+          externalJobPostingId: external_job_posting_id
+          jobPostingOperationType: CREATE
+          title: Software Developer in Test
+          description: >
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+            Lorem Ipsum has been the industry's standard dummy text ever since the
+            1500s, when an unknown printer took a galley of type and scrambled it to
+            make a type specimen book.
+          listedAt: 1633422040000
+          location: Sunnyvale, California
+          industries:
+            - urn:li:industry:55
+          listingType: PREMIUM
+          contract: urn:li:contract:123
+
+    createPublicJobWithRSCSchemaExample:
+      summary: Create a public job with RSC extenstion schema
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:1234
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            industries:
+              - urn:li:industry:55
+            listingType: BASIC
+            contract: urn:li:contract:123
+            requisitionOwnerFirstName: FirtName
+            requisitionOwnerLastName: LastName
+            requisitionOwnerEmail: sample@email.com
+            availability: PUBLIC
+
+    createPrivateJobWithRSCSchemaExample:
+      summary: Create a private job with RSC extension schema
+      value:
+        elements:
+          - integrationContext: urn:li:organization:1234
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            industries:
+              - urn:li:industry:55
+            listingType: BASIC
+            contract: urn:li:contract:123
+            requisitionOwnerFirstName: FirtName
+            requisitionOwnerLastName: LastName
+            requisitionOwnerEmail: sample@email.com
+            availability: PRIVATE_TO_ATS_INTEGRATION
+    
+    updateJobPostingExample:
+      summary: Update an existing job posting
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:123
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id_01
+            jobPostingOperationType: UPDATE
+            title: "<Updated> Software Developer in Test <Updated>"
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            categories:
+              - rsch
+            industries:
+              - urn:li:industry:55
+            skillsDescription: Lorem Ipsum is simply dummy text
+            companyJobCode: company_external_job_posting_id_01
+            workRemoteAllowed: false
+            employmentStatus: FULL_TIME
+            experienceLevel: EXECUTIVE
+            trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
+            listingType: BASIC
+    
+    renewJobPostingExample:
+      summary: Renew the expiry of an existing job posting by 30 days
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:123
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id_01
+            jobPostingOperationType: RENEW
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            categories:
+              - rsch
+            industries:
+              - urn:li:industry:55
+            skillsDescription: Lorem Ipsum is simply dummy text
+            companyJobCode: company_external_job_posting_id_01
+            workRemoteAllowed: false
+            employmentStatus: FULL_TIME
+            experienceLevel: EXECUTIVE
+            trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
+            listingType: BASIC
+            
+    closeJobPostingExample:
+      summary: Close an existing job posting
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:123
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: external_job_posting_id_01
+            jobPostingOperationType: CLOSE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+              Lorem Ipsum has been the industry's standard dummy text ever since the
+              1500s, when an unknown printer took a galley of type and scrambled it to
+              make a type specimen book.
+            listedAt: 1633422040000
+            location: Sunnyvale, California
+            categories:
+              - rsch
+            industries:
+              - urn:li:industry:55
+            skillsDescription: Lorem Ipsum is simply dummy text
+            companyJobCode: company_external_job_posting_id_01
+            workRemoteAllowed: false
+            employmentStatus: FULL_TIME
+            experienceLevel: EXECUTIVE
+            trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
+            listingType: BASIC
+            
+    createMultipleJobsExample:
+      summary: Create batch job postings
+      value:
+        elements:
+        - integrationContext: urn:li:organization:123
+          companyApplyUrl: https://careers.yourcompany.com/1
+          externalJobPostingId: external_job_posting_id_01
+          jobPostingOperationType: CREATE
+          title: Software Developer in Test
+          description: >
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+            Lorem Ipsum has been the industry's standard dummy text ever since the
+            1500s, when an unknown printer took a galley of type and scrambled it to
+            make a type specimen book.
+          listedAt: 1633422040000
+          location: Sunnyvale, California
+          industries:
+            - urn:li:industry:55
+          listingType: PREMIUM
+          contract: urn:li:contract:123
+        - integrationContext: urn:li:organization:456
+          companyApplyUrl: https://careers.yourcompany.com/2
+          externalJobPostingId: external_job_posting_id_02
+          jobPostingOperationType: CREATE
+          title: Software Developer in Test
+          description: >
+            Lorem Ipsum is simply dummy text of the printing and typesetting industry.
+            Lorem Ipsum has been the industry's standard dummy text ever since the
+            1500s, when an unknown printer took a galley of type and scrambled it to
+            make a type specimen book.
+          listedAt: 1633422040000
+          location: Sunnyvale, California
+          industries:
+            - urn:li:industry:55
+      
+    createJobPostingFoundationSchemaExample:
+      summary: Create basic Job Posting request example
+      description: >
+        Sample request to create a BASIC job posting on LinkedIn. <br>
+        To create a Basic job posting make sure the <b>listingType</b> is set to <b>BASIC</b>
+        Make sure <b>externalJobPostingId</b> is unique.
+      value:
+        elements:
+          - integrationContext: urn:li:organization:<organizationID>
+            companyApplyUrl: https://careers.yourcompany.com/jobID
+            externalJobPostingId: jobID_001
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+            listedAt: 1632469005000
+            location: Sunnyvale, California
+            listingType: BASIC
+            industries:
+              - urn:li:industry:55
+    
+    createPromotedJobsExtensionRequestExample:
+      summary: Create promoted Job Posting request example
+      description: > 
+        Example request to create PROMOTED Job Postings. <br>
+        Make sure the listingType is <b>PREMIUM</b> and <b>contract ID</b> is specified in the request.<br>
+        Make sure <b>externalJobPostingId</b> is unique.
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:<organizationID>
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: premium_job_posting_ID_001
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+            listedAt: 1632469005000
+            location: Sunnyvale, California
+            industries:
+              - urn:li:industry:55
+            listingType: PREMIUM
+            contract: urn:li:contract:<contractID>
+            
+    closeJobPostingFoundationSchemaExample:
+      summary: Close an already created BASIC Job Posting request example
+      description: >
+        Sample request to close a BASIC job posting on LinkedIn. <br>
+        To close a job, re-post the job using same externalJobPostingId value, but set <b>jobPostingOperationType</b> to <b>CLOSE</b>.<br>
+        This example request is a copy of the Create BASIC job posting request with jobPostingOperationType set to CLOSE.<br>
+        Make sure <b>externalJobPostingId</b> is same as the one used during job posting creation.
+        
+      value:
+        elements:
+          - integrationContext: urn:li:organization:<organizationID>
+            companyApplyUrl: https://careers.yourcompany.com/jobID
+            externalJobPostingId: jobID_001
+            jobPostingOperationType: CLOSE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+            listedAt: 1632469005000
+            location: Sunnyvale, California
+            listingType: BASIC
+            industries:
+              - urn:li:industry:55
+              
+    closePromotedJobsExtensionRequestExample:
+      summary: Close an already PROMOTED Job Posting request example
+      description: > 
+        Example request to close PROMOTED Job Postings. <br>
+        To close a job, re-post the job using same externalJobPostingId value, but set <b>jobPostingOperationType</b> to <b>CLOSE</b>.<br>
+        This example request is a copy of the Create PREMIUM job posting request with jobPostingOperationType set to CLOSE.<br>
+        Make sure <b>externalJobPostingId</b> is same as the one used during job posting creation.
+      value: 
+        elements:
+          - integrationContext: urn:li:organization:<organizationID>
+            companyApplyUrl: https://careers.yourcompany.com
+            externalJobPostingId: premium_job_posting_ID_001
+            jobPostingOperationType: CREATE
+            title: Software Developer in Test
+            description: >
+              Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book.
+            listedAt: 1632469005000
+            location: Sunnyvale, California
+            industries:
+              - urn:li:industry:55
+            listingType: PREMIUM
+            contract: urn:li:contract:<contractID>
+  
+    simpleJobPostingSuccessResponseExample:
+      summary: Sample response for successful job posting task creation
+      value:
+        elements:
+          - id: urn:li:simpleJobPostingTask:<taskID1>
+            status: 202
+            location: /simpleJobPostings/urn%3Ali%3AsimpleJobPostingTask%3A<taskID1>
+          - id: urn:li:simpleJobPostingTask:<taskID2>
+            status: 202
+            location: /simpleJobPostings/urn%3Ali%3AsimpleJobPostingTask%3A<taskID2>
+    
+    simpleJobPostingErrorResponseExample:
+      summary: Sample response for job posting task creation error
+      value:
+        elements:
+          - error:
+              message: >
+                ERROR :: /jobPostingOperationType :: \"CREATED\" is not an enum symbol\n
+              status: 422
+            status: 422
+
+    simpleJobPostingTaskSuccessResultExample:
+      summary: Sample response for successful completion of Job Posting Task
+      value:
+        results:
+          urn:li:simpleJobPostingTask:<taskId1>:
+            jobPosting: "urn:li:jobPosting:<jobPostingId>"
+            status: "SUCCEEDED"
+            id: "urn:li:simpleJobPostingTask:<taskId1>"
+            
+          urn:li:simpleJobPostingTask:<taskId2>:
+            jobPosting: "urn:li:jobPosting:<jobPostingId>"
+            status: "IN_PROGRESS"
+            id: "urn:li:simpleJobPostingTask:<taskId2>"
+            
+          errors: {}
+          statuses: {}
+          
+    simpleJobPostingTaskErrorResultExample:
+      summary: Sample response where the Job Posting Task failed
+      value:
+        results:
+          urn:li:simpleJobPostingTask:<taskID>:
+            errorMessage: |-
+              Job {partner=urn:li:jobPostingPartner:<partnerID>, partnerJobCode=<CODE>} was dropped: true
+        
+              Invalid Field: /city; 
+              Invalid Field: /postalCode; 
+              Invalid Field: /state; 
+              Invalid Field: /geoLocation; 
+            status: FAILED
+            id: urn:li:simpleJobPostingTask:<taskID>
+        statuses: {}
+        errors: {}
