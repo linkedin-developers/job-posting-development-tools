@@ -1,7 +1,8 @@
 openapi: 3.0.0
 info:
   description: >
-    LinkedIn's Job Posting API enables authorized third parties such as clients, ATS systems, and Job Distributors to post jobs directly to LinkedIn on behalf of customers. This guide details on how to integrate with LinkedIn's Jobs Posting API.
+    LinkedIn's Job Posting API enables authorized third parties such as clients, ATS systems, and Job Distributors to post jobs directly to LinkedIn on behalf of customers. This guide details how to integrate with LinkedIn's Jobs Posting API. <br>
+      This API uses the <b>Open API Specification</b>, which can be found at: https://www.openapis.org/, and which is subject to its own applicable license terms.
 
   version: '2.0'
   title: LinkedIn Job Posting API
@@ -75,7 +76,7 @@ paths:
             OK <br>
             A successful request returns a 200 OK response code, and you will find the simpleJobPostingTaskIDs in the response body. <br>
             In case of an error, the request can also return a 200 OK response code and the error message is within the response body.<br>
-            For more information in error codes and their resolutions refer the following error code references based on jobPostingOperationType
+            For more information on error codes and their resolutions refer to the following error code references based on jobPostingOperationType
               * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes">Error Codes while jobPostingOperationType = CREATE (creating new job postings)</a>
                * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/update-renew-jobs#error-codes">Error Codes while jobPostingOperationType = UPDATE or RENEW</a>
                * <a href="https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/close-jobs#error-codes">Error Codes while jobPostingOperationType = CLOSE</a>
@@ -93,7 +94,7 @@ paths:
         '401':
           description: >
             Unauthorized<br>
-            The access token that is being used is invalid or it has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+            The access token that is being used is invalid or has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
           content:
             application/json:
               schema:
@@ -123,7 +124,7 @@ paths:
         '403':
           description: >
             Forbidden<br>
-            The application is not authorized to make the calle. This can be due to the application used for posting premium job does not belong to the Job posting contract. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+            The application is not authorized to make the call. This can be due to the application used for posting premium jobs does not belong to the Job posting contract. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/create-jobs#error-codes'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
           content:
             application/json:
               schema:
@@ -208,7 +209,7 @@ paths:
         '401':
           description: >
             Unauthorized<br>
-            The access token that is being used is invalid or it has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/sync-job-postings'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
+            The access token that is being used is invalid or has expired. Refer <a href ='https://docs.microsoft.com/en-us/linkedin/talent/job-postings/api/sync-job-postings'>Linkedin Documentation</a> to get more details regarding the error and steps to resolve it.
           content:
             application/json:
               schema:
@@ -275,7 +276,7 @@ components:
         companyName:
           type: string
           description: >
-            The company name for which this job posting is created for. This field should be used in lieu of integrationContext only if the customer does not have contract with LinkedIn and cannot access the <a href="https://docs.microsoft.com/en-us/linkedin/talent/apply-connect/customer-configuration">Customer Onboarding Widget</a>.
+            The company name for which this job posting is created for. This field should be used in lieu of integrationContext only if the customer does not have a contract with LinkedIn and cannot access the <a href="https://docs.microsoft.com/en-us/linkedin/talent/apply-connect/customer-configuration">Customer Onboarding Widget</a>.
           example: LinkedIn
         
         companyApplyUrl:
@@ -321,7 +322,7 @@ components:
         listedAt:
           type: integer
           format: int64
-          description: Represents initial date the job posting was added into the application tracking system. The date is epoch timestamp in milliseconds (UTC) and should not be a future time
+          description: Represents the initial date the job posting was added into the application tracking system. The date is epoch timestamp in milliseconds (UTC) and should not be a future time
           example: 1632446968000
 
         location:
@@ -405,7 +406,7 @@ components:
         expireAt:
           type: integer
           format: int64
-          description: The job will expire (and no longer be shown to users) at this date. Can be a maximum of three years from time job is sent to LinkedIn. If no expiration date is passed in, the job will default to 180 days expiration. Value greater than 180 days is not allowed. The expireAt date is represented as epoch timestamp in milliseconds (UTC).
+          description: The job will expire (and no longer be shown to users) at this date. Can be a maximum of three years from the time job is sent to LinkedIn. If no expiration date is passed in, the job will default to 180 days expiration. Value greater than 180 days is not allowed. The expireAt date is represented as epoch timestamp in milliseconds (UTC).
           example: 1632446968000
 
         listingType:
@@ -414,7 +415,7 @@ components:
                 - PREMIUM
                 - BASIC
               description: >
-                Represents the type of this job posting to be published. Value of <b>PREMIUM<b> should be provided only if integration is build for Promoted Job Posting Extension Schema. If no value is provided, default value is <b>BASIC</b>.
+                Represents the type of this job posting to be published. Value of <b>PREMIUM<b> should be provided only if integration is built for Promoted Job Posting Extension Schema. If no value is provided, default value is <b>BASIC</b>.
               example: PREMIUM
               default: BASIC
 
@@ -446,7 +447,7 @@ components:
 
         showPosterInfo:
           type: boolean
-          description: Represents whether LinkedIn would display the poster information on job description page. The default value is false (No). For Basic jobs this only works if posterEmail is provided and can be associated to a contract seat holder
+          description: Represents whether LinkedIn would display the poster information on the job description page. The default value is false (No). For Basic jobs, this only works if posterEmail is provided and can be associated with a contract seat holder
           example: true
       
       required:
@@ -454,39 +455,35 @@ components:
 
     RecruiterSystemConnectExtensionSchema:
       title: Job Posting with Recruiter System Connect Extension Schema
-      allOf:
-        - $ref: '#/components/schemas/JobPostingFoundationSchema'
-        - type: object
-          properties:
+      properties:
+        availability:
+          type: string
+          enum:
+            - PUBLIC
+            - PRIVATE_TO_ATS_INTEGRATION
+          description: >
+            <b>PUBLIC</b> indicates that the job posting will be visible to LinkedIn members and posted on company page on LinkedIn website. <br> 
+            <b>PRIVATE_TO_ATS_INTEGRATION</b> indicates the job will be visible on within Recruiter Dashboard during 1-Click Export. Must be <b>PUBLIC</b> for Apply Connect enabled jobs.
+          example: PUBLIC
 
-            availability:
-              type: string
-              enum:
-                - PUBLIC
-                - PRIVATE_TO_ATS_INTEGRATION
-              description: >
-                <b>PUBLIC</b> indicates that the job posting will be visible to LinkedIn members and posted on company page on LinkedIn website. <br> 
-                <b>PRIVATE_TO_ATS_INTEGRATION</b> indicates the job will be visible on within Recruiter Dashboard during 1-Click Export. Must be <b>PUBLIC</b> for Apply Connect enabled jobs.
-              example: PUBLIC
+        requisitionOwnerEmail:
+          type: string
+          format: email
+          description: Email of the requisition owner
+          example: recruiter@company.com
 
-            requisitionOwnerEmail:
-              type: string
-              format: email
-              description: Email of the requisition owner
-              example: recruiter@company.com
+        requisitionOwnerLastName:
+          type: string
+          description: Last name of the requisition owner
+          example: Doe
 
-            requisitionOwnerLastName:
-              type: string
-              description: Last name of the requisition owner
-              example: Doe
+        requisitionOwnerFirstName:
+          type: string
+          description: First name of the requisition owner
+          example: John
 
-            requisitionOwnerFirstName:
-              type: string
-              description: First name of the requisition owner
-              example: John
-
-          required:
-            - availability
+      required:
+        - availability
 
     SimpleJobPostingAPIResult:
       title: /simpleJobPostingTask API Response Schema
