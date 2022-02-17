@@ -4,7 +4,7 @@ info:
     LinkedIn's Job Posting API enables authorized third parties such as clients, ATS systems, and Job Distributors to post jobs directly to LinkedIn on behalf of customers. This guide details how to integrate with LinkedIn's Jobs Posting API. <br>
       This API uses the <b>Open API Specification</b>, which can be found at: https://www.openapis.org/, and which is subject to its own applicable license terms.
 
-  version: '2.0'
+  version: 2.0.1
   title: LinkedIn Job Posting API
   
 externalDocs:
@@ -338,7 +338,7 @@ components:
             type: string
           example: [acct, sale]
           description: >
-            Represents job functions specific to this job (for example, Accounting, Marketing, Sales). Category names are predefined by LinkedIn and can be retrieved from <a href="https://docs.microsoft.com/en-us/linkedin/shared/references/reference-tables/job-function-codes">Job Functions reference</a> table.
+            Represents job functions specific to this job (for example, Accounting, Marketing, Sales). The values provided is automatically mapped to one of the category names predefined by LinkedIn which can be retrieved from <a href="https://docs.microsoft.com/en-us/linkedin/shared/references/reference-tables/job-function-codes">Job Functions reference</a> table.
         
         skillsDescription:
           type: string
@@ -350,12 +350,23 @@ components:
           description: Represents job posting id within the company’s system for reference.
           example: "jobID_001"
 
-        workRemoteAllowed:
-          type: boolean
+        workPlaceTypes:
+          type: array
+          items: 
+            type: string
+            enum: 
+              - On-Site
+              - Hybrid
+              - Remote
+          maxItems: 1
+          
           description: >
-            Represents whether this job posting supports remote work option. The default value for this field is false. If this value is true, the value for the <b>location</b> field should be provided as the company headquarters location.
-          example: true
-          default: false
+            Represents the workplace nature of the job. Remote value should be provided when employee is allowed to work remotely. Hybrid should be provided if the employee is expected to work some days from home and some days from the designated office. On-Site should be used when it is mandatory for employee to work only from the designated office.
+            * For `Remote` jobs only Country value can be provided for location field
+            * For `On-site` and Hybrid jobs, location field should be in either of the following formats "CITY, STATE, COUNTRY", "CITY, STATE", "CITY, PROVINCE", "CITY, COUNTRY" or "POSTALCODE, COUNTRYCODE"
+
+          example: [Remote]
+          default: [On-Site]
 
         industries:
           type: array
@@ -367,30 +378,19 @@ components:
 
         employmentStatus:
           type: string
-          enum:
-            - FULL_TIME
-            - PART_TIME
-            - CONTRACT
-            - INTERNSHIP
-            - TEMPORARY
-            - VOLUNTEER
-            - OTHER
           default: FULL_TIME
-          description: Represents employment status of the job position
+          description: >
+            Represents employment status of the job position. Accepts raw string values for this field. LinkedIn automatically maps the string to one of LinkedIn taxonomy [`FULL_TIME`, `PART_TIME`, `CONTRACT`, `INTERNSHIP`, `TEMPORARY`, `VOLUNTEER`, `OTHER`]
+            <br><b>
+            *Note:* Though the field accepts raw string value. LinkedIn recommends developers provide one of the above mentioned LinkedIn taxonomy value.
           example: PART_TIME
 
         experienceLevel:
           type: string
-          enum: 
-            - ENTRY_LEVEL
-            - MID_SENIOR_LEVEL
-            - DIRECTOR
-            - EXECUTIVE
-            - INTERNSHIP
-            - ASSOCIATE
-            - NOT_APPLICABLE
-
-          description: Represents experience level of the job position to hire
+          description: >
+            Represents experience level of the job position to hire. Accepts raw string values for this field. LinkedIn automatically maps the string to one of LinkedIn taxonomy [`ENTRY_LEVEL`, `MID_SENIOR_LEVEL`, `DIRECTOR`, `EXECUTIVE`, `INTERNSHIP`, `ASSOCIATE`, `NOT_APPLICABLE`]
+            <br>
+            *Note:* Though the field accepts raw string value. LinkedIn recommends developers provide one of the above mentioned LinkedIn taxonomy value.
           example: ENTRY_LEVEL
 
         companyDescription:
@@ -406,7 +406,11 @@ components:
         expireAt:
           type: integer
           format: int64
-          description: The job will expire (and no longer be shown to users) at this date. Can be a maximum of three years from the time job is sent to LinkedIn. If no expiration date is passed in, the job will default to 180 days expiration. Value greater than 180 days is not allowed. The expireAt date is represented as epoch timestamp in milliseconds (UTC).
+          description: >
+            The job will expire (and no longer be shown to users) at this date. If no expiration date is passed in, the job will default to 180 days expiration. Value greater than 180 is not allowed. For premium jobs only the contract level expiry setting is applicable. 
+            <br>
+            
+            *Note:* The value should be EPOCH in milliseconds.
           example: 1632446968000
 
         listingType:
@@ -593,7 +597,7 @@ components:
               - urn:li:industry:55
             skillsDescription: Lorem Ipsum is simply dummy text
             companyJobCode: company_external_job_posting_id_01
-            workRemoteAllowed: false
+            workPlaceTypes: [On-Site]
             employmentStatus: FULL_TIME
             experienceLevel: EXECUTIVE
             trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
@@ -621,7 +625,7 @@ components:
               - urn:li:industry:55
             skillsDescription: Lorem Ipsum is simply dummy text
             companyJobCode: company_external_job_posting_id_01
-            workRemoteAllowed: true
+            workPlaceTypes: [Remote]
             employmentStatus: FULL_TIME
             experienceLevel: EXECUTIVE
             trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
@@ -720,7 +724,7 @@ components:
               - urn:li:industry:55
             skillsDescription: Lorem Ipsum is simply dummy text
             companyJobCode: company_external_job_posting_id_01
-            workRemoteAllowed: false
+            workPlaceTypes: [On-Site]
             employmentStatus: FULL_TIME
             experienceLevel: EXECUTIVE
             trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
@@ -748,7 +752,7 @@ components:
               - urn:li:industry:55
             skillsDescription: Lorem Ipsum is simply dummy text
             companyJobCode: company_external_job_posting_id_01
-            workRemoteAllowed: false
+            workPlaceTypes: [On-Site]
             employmentStatus: FULL_TIME
             experienceLevel: EXECUTIVE
             trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
@@ -776,7 +780,7 @@ components:
               - urn:li:industry:55
             skillsDescription: Lorem Ipsum is simply dummy text
             companyJobCode: company_external_job_posting_id_01
-            workRemoteAllowed: false
+            workPlaceTypes: [On-Site]
             employmentStatus: FULL_TIME
             experienceLevel: EXECUTIVE
             trackingPixelUrl: http://www.trackingpixellocation.com/pixel.gif
@@ -951,10 +955,7 @@ components:
           urn:li:simpleJobPostingTask:<taskID>:
             errorMessage: |-
               Job {partner=urn:li:jobPostingPartner:<partnerID>, partnerJobCode=<CODE>} was dropped: true
-        
               Invalid Field: /city; 
-              Invalid Field: /postalCode; 
-              Invalid Field: /state; 
               Invalid Field: /geoLocation; 
             status: FAILED
             id: urn:li:simpleJobPostingTask:<taskID>
